@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>CHESS</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <style>
+        body {
+            font: 20px "Arial", Futura, sans-serif;
+            margin: 20px;
+        }
+
+        ol,
+        ul {
+            padding-left: 30px;
+        }
+
+        .left{
+            float: left;
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .board {
+            border: 1px solid black;
+            position: static;
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+        }
+
+        .text {
+            align-self: center;
+            text-align: center;
+        }
+
+        .board-row:after {
+            clear: both;
+            content: "";
+            display: table;
+        }
+
+        .status {
+            margin-bottom: 10px;
+        }
+
+        .square {
+            float: left;
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 34px;
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            text-align: center;
+        }
+
+        .square:focus {
+            outline: none;
+        }
+
+        .kbd-navigation .square:focus {
+            background: #ddd;
+        }
+
+        .game {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .game-info {
+            margin-left: 20px;
+        }
+
+        .playButtonAction {
+            align-self: center;
+            margin-left: 50%;
+            margin-right: 50%;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .status-game {
+            text-align: center;
+        }
+    </style>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<body>
+<div id="timer"></div>
+<div id="root"></div>
+<div id="conta" className="container"><div id = "setUp"></div></div>
+<script type="text/babel">
+
+    var list1 = ['8', '7', '6', '5', '4', '3', '2', '1'];
+    var listA = ['', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const game = document.getElementById('setUp');
+    const gameContainer = document.getElementById('conta');
+    var vali = true;
+
+    class Square extends React.Component {
+        constructor(props) {
+            super(props);
+            this.value = props.value;
+            this.onClick = props.onClick;
+            this.color = props.color;
+        }
+
+        render() {
+            const mystyle = {
+                backgroundColor: this.color,
+            }
+            return (
+                <button className="square" style={mystyle} onClick={this.props.onClick}></button>
+            )
+        }
+    }
+
+    class Board extends React.Component {
+        constructor(props) {
+            super(props);
+            this.state = {
+                squares: Array(64).fill(null),
+                history: [],
+                score: 0,
+                tile: '  ',
+                minutes: 1,
+                seconds: 0,
+                displaytTimer: 0,
+                timer: 60,
+                start: false,
+                moves: 0
+            };
+        }
+
+        handleClick(i) {
+            const squares = this.state.squares.slice();
+
+            if (endGame(this.state.seconds, this.state.minutes) || !this.state.start) {
+                return;
+            }
+
+            this.state.score = this.state.score + checkScore(this.state.tile, i);
+
+            if (checkScore(this.state.tile, i) === 1) {
+                this.timeOnClic();
+                const plays = {
+                    text: "Tile:" + this.state.tile + ", Time 0:" + this.state.displaytTimer + " ✓",
+                    id: this.state.moves
+                }
+                this.state.moves = this.state.moves + 1;
+                this.state.history = this.state.history.concat(plays);
+                squares[i] = '✓';
+            } else {
+                this.timeOnClic();
+                const plays = {
+                    text: "Tile:" + this.state.tile + ", Time 0:" + this.state.displaytTimer + " X",
+                    id: this.state.moves
+                }
+                this.state.moves = this.state.moves + 1;
+                this.state.history = this.state.history.concat(plays);
+                squares[i] = 'X';
+            }
+            this.state.tile = getRandomTile();
+
+
+            this.setState({
+                squares: squares
+            });
+        }
+
+        startGame(button){
+            if (!this.state.start) {
+                this.state.start = true;
+                this.state.tile = getRandomTile();
+                button.innerHTML = "Restart";
+            } else {
+                this.state.timer = 60;
+                this.state.seconds = 0;
+                this.state.minutes = 1;
+                this.state.score = 0;
+                this.state.tile = getRandomTile();
+                this.state.history = [];
+                this.state.moves = 0;
+                this.state.start = false;
+                button.innerHTML = "Play";
+            }
+
+        }
+
+        tick() {
+            this.setState(state => ({
+                seconds: state.seconds + this.checkSeconds(),
+                minutes: state.minutes + this.checkMin(),
+            }));
+        }
+
+        componentDidMount() {
+            this.interval = setInterval(() => this.tick(), 1000);
+        }
+
+        componentWillUnmount() {
+            clearInterval(this.interval);
+        }
+
+        timeOnClic() {
+            this.state.displaytTimer = this.state.timer - this.state.seconds;
+            this.state.timer = this.state.seconds;
+        }
+
+        checkMin() {
+            let sum = 0;
+            if (this.state.minutes === 1 & this.state.start) {
+                sum = -1;
+            }
+            return sum;
+        }
+
+        checkSeconds() {
+            let sum = 0;
+            if (this.state.minutes === 1 & this.state.start) {
+                sum = 59;
+            } else if (this.state.seconds > 0 & this.state.start) {
+                sum = -1;
+            }
+            return sum;
+        }
+
+        loadGame() {
+            game.className = "board";
+            gameContainer.className = "container";
+            var valiColor = 0;
+
+            let buttonPlay = document.createElement('Button');
+            buttonPlay.className = "playButtonAction";
+            buttonPlay.innerHTML = "Play";
+            buttonPlay.onclick = () => this.startGame(buttonPlay);
+            gameContainer.insertAdjacentElement('beforeend', buttonPlay);
+
+            for(let i = 0; i < 8; i++) {
+
+                let number = document.createElement('a');
+                number.className = "text";
+                number.innerHTML = list1[i];
+                game.insertAdjacentElement('beforeend', number);
+
+                for(let j = 1; j <= 8; j++) {
+
+                    let tempDiv = document.createElement('Button');
+                    tempDiv.className = "square";
+                    tempDiv.style.backgroundColor = valiColor % 2 === 0 ? '#00725D' : 'white';
+                    tempDiv.onclick = () => this.handleClick(listA[j]+list1[i]);
+                    game.insertAdjacentElement('beforeend', tempDiv);
+                    valiColor++;
+                }
+                valiColor--;
+            }
+
+            for (const valor of listA) {
+                let leatter = document.createElement('a');
+                leatter.className = "text";
+                leatter.innerHTML = valor;
+                game.insertAdjacentElement('beforeend', leatter);
+            }
+
+            console.log(gameContainer.lastChild);
+
+
+        }
+
+        render() {
+            const end = endGame(this.state.seconds, this.state.minutes);
+            let status;
+            if (end) {
+                status = 'Score: ' + this.state.score * 15 + ', Correct tiles: ' + this.state.score;
+            } else {
+                status = 'Score ' + this.state.score * 15;
+            }
+            if (vali) {
+                this.loadGame();
+                vali = false;
+
+            }
+
+            return (
+
+                <div>
+                    <div className='status-game'>
+                        Time: {this.state.minutes}:{this.state.seconds}
+                        <div className="tileSearch">Tile: {this.state.tile}</div>
+                        <div className="status">{status}</div>
+                    </div>
+
+                    <div className="left">
+                        <ul>
+                            {this.state.history.map(item => (
+                                <li key={item.id}>{item.text}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            );
+
+
+        }
+
+
+
+    }
+
+
+
+    function checkScore(tile, i) {
+        let sum = 0;
+        if (tile === i) {
+            sum = 1;
+        }
+        return sum;
+    }
+
+    function getRandomTile() {
+        let letter = listA[Math.floor((Math.random() * (8)) + 1)];
+        let num = list1[Math.floor(Math.random() * (8))]
+        console.log(letter)
+        return letter + num;
+    }
+
+    function endGame(seconds, minutes) {
+        let end = false;
+        if (seconds === 0 && minutes === 0) {
+            end = true;
+        }
+        return end;
+    }
+
+    ReactDOM.render(
+        <Board />,
+        document.getElementById('root')
+    );
+
+</script>
+</body>
+
+</html>
